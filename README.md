@@ -5,7 +5,7 @@ Helper library for Smart Home League.
 ## Install
 
 ```bash
-pip install git+https://github.com/smart-home-league/smarthome_robot.git
+pip install smarthome_robot
 ```
 
 ## Usage
