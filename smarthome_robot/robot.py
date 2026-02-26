@@ -195,6 +195,10 @@ class RobotU14(Robot):
         return data.get('currentRoom')
 
 
+class RobotFS(RobotU14):
+    """First Step robot: same as U14."""
+
+
 class RobotU19(Robot):
     """U19 robot: adds GPS and IMU for pose estimation."""
 
