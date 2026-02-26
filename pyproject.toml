@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "smarthome_robot_arrshad"
+name = "smarthome_robot"
 version = "0.1.0"
 description = "Helper library for Smart Home League"
 readme = "README.md"
