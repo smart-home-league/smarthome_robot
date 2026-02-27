@@ -31,7 +31,11 @@ class Robot(BaseRobot):
         super().__init__()
         self.team_name = team_name
         self.time_step = int(self.getBasicTimeStep())
-        self.setCustomData(json.dumps({"team": team_name}))
+
+        current_data = self.data
+        current_data.update({"team": team_name})
+        self.data = current_data
+        
         self._init_devices()
 
     def _init_devices(self) -> None:
@@ -66,6 +70,18 @@ class Robot(BaseRobot):
         self._left_encoder.enable(ts)
         self._right_encoder.enable(ts)
 
+
+    @property
+    def data(self) -> dict:
+        """Custom data dictionary for communication with supervisor."""
+        try:
+            return json.loads(self.getCustomData())
+        except:
+            return {}
+        
+    @data.setter
+    def data(self, value: dict) -> None:
+        self.setCustomData(json.dumps(value))
 
     @property
     def receiver(self) -> Any:
