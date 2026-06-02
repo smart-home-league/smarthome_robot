@@ -174,8 +174,8 @@ class Robot(BaseRobot):
         self._leds[2].set(bool(value))
 
 
-class RobotU14(Robot):
-    """U14 robot: adds ground color sensor for floor dust detection."""
+class RobotFS(Robot):
+    """First Step robot: adds ground color sensor for floor dust detection."""
 
     def _init_devices(self) -> None:
         """Enable base devices plus ground color sensor."""
@@ -211,8 +211,49 @@ class RobotU14(Robot):
         return data.get('currentRoom')
 
 
-class RobotFS(RobotU14):
-    """First Step robot: same as U14."""
+class RobotU14(Robot):
+    """U14 robot: adds ground color sensor for floor dust detection and IMU for pose estimation."""
+
+    def _init_devices(self) -> None:
+        """Enable base devices plus ground color sensor and IMU."""
+        super()._init_devices()
+        ts = self.time_step
+        self._color_sensor = _require_device(self, "ground_color_sensor")
+        self._color_sensor.enable(ts)
+        self._imu = _require_device(self, "inertial unit")
+        self._imu.enable(ts)
+
+    @property
+    def color_sensor(self) -> Tuple[int, int, int]:
+        """RGB tuple (r, g, b) of floor ahead. Pixel at rightmost column, center row."""
+        img = self._color_sensor.getImage()
+        if not img:
+            return (0, 0, 0)
+        w = self._color_sensor.getWidth()
+        h = self._color_sensor.getHeight()
+        px, py = w - 1, h // 2
+        r = self._color_sensor.imageGetRed(img, w, px, py)
+        g = self._color_sensor.imageGetGreen(img, w, px, py)
+        b = self._color_sensor.imageGetBlue(img, w, px, py)
+        return (r, g, b)
+    
+    @property
+    def rooms(self) -> Dict[int, float]:
+        """Room percentage data: {room_id: percentage} for all rooms in the environment."""
+        data = json.loads(self.getCustomData())
+        return data.get('roomPcts')
+    
+    @property
+    def current_room(self) -> Dict[int, float]:
+        """Current room ID."""
+        data = json.loads(self.getCustomData())
+        return data.get('currentRoom')
+    
+    @property
+    def rotation(self) -> float:
+        """Yaw in degrees (0-360)."""
+        _, _, yaw = self._imu.getRollPitchYaw()
+        return (math.degrees(yaw) + 360.0) % 360.0
 
 
 class RobotU19(Robot):
