@@ -4,7 +4,7 @@ Smart Home Robot - base classes for Smart Home League.
 
 import json
 import math
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from controller import Robot as BaseRobot
 
@@ -19,21 +19,23 @@ def _require_device(robot: BaseRobot, name: str) -> Any:
 class Robot(BaseRobot):
     """Shared robot with common devices: bumpers, distance sensors, motors, encoders, receiver, LEDs."""
 
-    def __init__(self, team_name: str = "My Team") -> None:
+    def __init__(self, team_name: str = "My Team", spawn_point: Optional[Tuple[float, float]] = None) -> None:
         """Initialize robot and enable all common devices.
 
         Args:
             team_name: Name sent to supervisor (shown on dashboard).
+            spawn_point: Point where the robot is spawned in the simulation.
 
         Raises:
             ValueError: If any required device is missing from the robot model.
         """
         super().__init__()
         self.team_name = team_name
+        self.spawn_point = spawn_point
         self.time_step = int(self.getBasicTimeStep())
 
         current_data = self.data
-        current_data.update({"team": team_name})
+        current_data.update({"team": team_name, "spawn_point": spawn_point})
         self.data = current_data
         
         self._init_devices()
@@ -69,7 +71,6 @@ class Robot(BaseRobot):
         self._right_encoder = _require_device(self, "right wheel sensor")
         self._left_encoder.enable(ts)
         self._right_encoder.enable(ts)
-
 
     @property
     def data(self) -> dict:
