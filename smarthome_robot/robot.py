@@ -17,7 +17,7 @@ def _require_device(robot: BaseRobot, name: str) -> Any:
 
 
 class Robot(BaseRobot):
-    """Shared robot with common devices: bumpers, distance sensors, motors, encoders, receiver, LEDs."""
+    """Shared robot with common devices: bumpers, distance sensors, motors, encoders, imu, receiver, LEDs."""
 
     def __init__(self, team_name: str = "My Team") -> None:
         """Initialize robot and enable all common devices.
@@ -39,7 +39,7 @@ class Robot(BaseRobot):
         self._init_devices()
 
     def _init_devices(self) -> None:
-        """Enable and configure bumpers, distance sensors, motors, encoders, receiver, and LEDs."""
+        """Enable and configure bumpers, distance sensors, motors, encoders, imu, receiver, and LEDs."""
         ts = self.time_step
 
         self._bumpers = [_require_device(self, n) for n in ["bumper_left", "bumper_right"]]
@@ -69,6 +69,9 @@ class Robot(BaseRobot):
         self._right_encoder = _require_device(self, "right wheel sensor")
         self._left_encoder.enable(ts)
         self._right_encoder.enable(ts)
+
+        self._imu = _require_device(self, "inertial unit")
+        self._imu.enable(ts)
 
     @property
     def data(self) -> dict:
@@ -144,6 +147,17 @@ class Robot(BaseRobot):
     def right_encoder(self) -> float:
         """Right wheel encoder position (rad)."""
         return self._right_encoder.getValue()
+    
+    @property
+    def imu(self) -> Tuple[float, float, float]:
+        """(roll, pitch, yaw) in radians."""
+        return self._imu.getRollPitchYaw()
+    
+    @property
+    def rotation(self) -> float:
+        """Yaw in degrees (0-360)."""
+        _, _, yaw = self._imu.getRollPitchYaw()
+        return (math.degrees(yaw) + 360.0) % 360.0
 
     @property
     def led_on(self) -> bool:
@@ -210,53 +224,12 @@ class RobotFS(Robot):
         return data.get('currentRoom')
 
 
-class RobotU14(Robot):
-    """U14 robot: adds ground color sensor for floor dust detection and IMU for pose estimation."""
-
-    def _init_devices(self) -> None:
-        """Enable base devices plus ground color sensor and IMU."""
-        super()._init_devices()
-        ts = self.time_step
-        self._color_sensor = _require_device(self, "ground_color_sensor")
-        self._color_sensor.enable(ts)
-        self._imu = _require_device(self, "inertial unit")
-        self._imu.enable(ts)
-
-    @property
-    def color_sensor(self) -> Tuple[int, int, int]:
-        """RGB tuple (r, g, b) of floor ahead. Pixel at rightmost column, center row."""
-        img = self._color_sensor.getImage()
-        if not img:
-            return (0, 0, 0)
-        w = self._color_sensor.getWidth()
-        h = self._color_sensor.getHeight()
-        px, py = w - 1, h // 2
-        r = self._color_sensor.imageGetRed(img, w, px, py)
-        g = self._color_sensor.imageGetGreen(img, w, px, py)
-        b = self._color_sensor.imageGetBlue(img, w, px, py)
-        return (r, g, b)
-    
-    @property
-    def rooms(self) -> Dict[int, float]:
-        """Room percentage data: {room_id: percentage} for all rooms in the environment."""
-        data = json.loads(self.getCustomData())
-        return data.get('roomPcts')
-    
-    @property
-    def current_room(self) -> Dict[int, float]:
-        """Current room ID."""
-        data = json.loads(self.getCustomData())
-        return data.get('currentRoom')
-    
-    @property
-    def rotation(self) -> float:
-        """Yaw in degrees (0-360)."""
-        _, _, yaw = self._imu.getRollPitchYaw()
-        return (math.degrees(yaw) + 360.0) % 360.0
+class RobotU14(RobotFS):
+    """U14 robot: adds ground color sensor for floor dust detection."""
 
 
 class RobotU19(Robot):
-    """U19 robot: adds GPS and IMU for pose estimation."""
+    """U19 robot: adds GPS for pose estimation."""
 
     def _init_devices(self) -> None:
         """Enable base devices plus GPS and IMU."""
@@ -264,8 +237,6 @@ class RobotU19(Robot):
         ts = self.time_step
         self._gps = _require_device(self, "gps")
         self._gps.enable(ts)
-        self._imu = _require_device(self, "inertial unit")
-        self._imu.enable(ts)
 
     @property
     def gps(self) -> Tuple[float, float, float]:
@@ -273,22 +244,11 @@ class RobotU19(Robot):
         return self._gps.getValues()
 
     @property
-    def imu(self) -> Tuple[float, float, float]:
-        """(roll, pitch, yaw) in radians."""
-        return self._imu.getRollPitchYaw()
-
-    @property
     def position(self) -> Tuple[float, float]:
         """(x, y) in world coordinates."""
         x, y, _ = self._gps.getValues()
         return (x, y)
 
-    @property
-    def rotation(self) -> float:
-        """Yaw in degrees (0-360)."""
-        _, _, yaw = self._imu.getRollPitchYaw()
-        return (math.degrees(yaw) + 360.0) % 360.0
-    
     @property
     def battery(self) -> float:
         """Battery level data."""
