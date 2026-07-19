@@ -1,7 +1,7 @@
 """
 Smart Home Robot - helper library for Smart Home League.
 """
-__version__ = "0.1.5"
+__version__ = "0.1.6"
 
 # Import robot classes lazily; the `controller` dependency (Webots) may not
 # be available at install/import time for people who only need metadata.
